@@ -10,9 +10,10 @@ import operator
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-#%matplotlib inline 
-
-
+from pymongo import MongoClient
+client=MongoClient("mongodb://root:firefox99@45.33.67.195:27017")
+db=client.hackHers2017
+image_posts=db.image_posts
 # In[133]:
 
 _url = 'https://westus.api.cognitive.microsoft.com/emotion/v1.0/recognize'
@@ -84,10 +85,12 @@ def read_and_classifyImage(frames,index):
    params = None
 
    result = processRequest( json, data, headers, params )
-
+   print(frames[6:-3],result[0]['scores'])
+   # post={str(frames[6:-3]):result[0]['scores']}
+   # image_posts.insert_one(post)
    #this part of the code grabs the maximum value emotion and emotion-rank
-   # x=result[0]['scores'] #get the list of possible emotion and their rank
-   # print(result[0]['scores'])
+   x=result[0]['scores'] #get the list of possible emotion and their rank
+   print(result[0]['scores'])
    # keys=[] #dummy dictionary
    # values=[]
    # for key,value in x.items():
@@ -97,7 +100,7 @@ def read_and_classifyImage(frames,index):
    # max_values=list((math.ceil((max(values)*10)),keys[values.index(max_value)]))
    #print(max_values)
    if result is not None:
-      # Load the original image from disk
+      Load the original image from disk
       data8uint = np.fromstring( data, np.uint8 ) # Convert string to an unsigned int array
       img = cv2.cvtColor( cv2.imdecode( data8uint, cv2.IMREAD_COLOR ), cv2.COLOR_BGR2RGB )
 
@@ -126,15 +129,27 @@ def renderResultOnImage(result,img):
 
 
         textToWrite = "%s" % ( currEmotion )
-        cv2.putText( img, textToWrite, (faceRectangle['left'],faceRectangle['top']-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1 )
+        cv2.putText( img, textToWrite, (faceRectangle['left'],faceRectangle['top']-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 2 )
 
 
 def main():
-  index=102
+  index=2703
   while(True):
-    source='video/frame'+str(index)+'.jpg'
-    read_and_classifyImage(source,index)
-    if index==8:
-      time.sleep(1)
-    index+=1
+    try:
+      source='video/frame'+str(index)+'.jpg'
+      read_and_classifyImage(source,index)
+      if index==8:
+        time.sleep(1)
+      index+=1
+    except NameError:
+      if _key== 'a9676e1d0c594525954aab7dc77e75d0':
+        time.sleep(32)
+        global _key
+        _key="b1187cc9f9194329ac5aaed5dd9d8fbe"
+      else:
+        _key='a9676e1d0c594525954aab7dc77e75d0'
+    except FileNotFoundError:
+        index+=1
+
+
 main()
