@@ -9,6 +9,8 @@ import cv2
 import operator
 import numpy as np
 import math
+import matplotlib.pyplot as plt
+#%matplotlib inline 
 
 
 # In[133]:
@@ -69,8 +71,8 @@ def processRequest( json, data, headers, params ):
 
 # In[168]:
 
-def read_and_classifyImage():
-   pathToImage = 'Tas.jpg'
+def read_and_classifyImage(frames,index):
+   pathToImage = frames
    with open( pathToImage, 'rb' ) as f:
        data = f.read()
 
@@ -84,17 +86,55 @@ def read_and_classifyImage():
    result = processRequest( json, data, headers, params )
 
    #this part of the code grabs the maximum value emotion and emotion-rank
-   x=result[0]['scores'] #get the list of possible emotion and their rank
-   print(result[0]['scores'])
-   keys=[] #dummy dictionary
-   values=[]
-   for key,value in x.items():
-       keys.append(key)
-       values.append(value)
-   max_value=max(values)
-   max_values=list((math.ceil((max(values)*10)),keys[values.index(max_value)]))
-   print(max_values)
-   return max_values
+   # x=result[0]['scores'] #get the list of possible emotion and their rank
+   # print(result[0]['scores'])
+   # keys=[] #dummy dictionary
+   # values=[]
+   # for key,value in x.items():
+   #     keys.append(key)
+   #     values.append(value)
+   # max_value=max(values)
+   # max_values=list((math.ceil((max(values)*10)),keys[values.index(max_value)]))
+   #print(max_values)
+   if result is not None:
+      # Load the original image from disk
+      data8uint = np.fromstring( data, np.uint8 ) # Convert string to an unsigned int array
+      img = cv2.cvtColor( cv2.imdecode( data8uint, cv2.IMREAD_COLOR ), cv2.COLOR_BGR2RGB )
 
-read_and_classifyImage()
+      renderResultOnImage( result, img )
 
+      ig, ax = plt.subplots(figsize=(15, 20))
+      ax.imshow( img,aspect='auto')
+      destinations='filtered/filtered_frame'+str(index)+".jpg"
+      plt.savefig(destinations)
+      
+
+def renderResultOnImage(result,img):
+    
+    """Display the obtained results onto the input image"""
+    
+    for currFace in result:
+        faceRectangle = currFace['faceRectangle']
+        cv2.rectangle( img,(faceRectangle['left']-2,faceRectangle['top']-2),
+                           (faceRectangle['left']-2+faceRectangle['width']-2, faceRectangle['top'] -2+ faceRectangle['height']-2),
+                       color = (255,0,0), thickness = 5 )
+
+
+    for currFace in result:
+        faceRectangle = currFace['faceRectangle']
+        currEmotion = max(currFace['scores'].items(), key=operator.itemgetter(1))[0]
+
+
+        textToWrite = "%s" % ( currEmotion )
+        cv2.putText( img, textToWrite, (faceRectangle['left'],faceRectangle['top']-10), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,0,0), 1 )
+
+
+def main():
+  index=102
+  while(True):
+    source='video/frame'+str(index)+'.jpg'
+    read_and_classifyImage(source,index)
+    if index==8:
+      time.sleep(1)
+    index+=1
+main()
